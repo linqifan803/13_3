@@ -11,28 +11,35 @@ except ImportError:
     types = None
 
 
+# -------------------------
+# 페이지 설정
+# -------------------------
 st.set_page_config(
-    page_title="북한어 변환소",
-    page_icon="🗣️",
-    layout="wide"
+    page_title="북한어변환",
+    page_icon="📘",
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# 예시 사전: AI 없이도 작동하는 기본 변환
+
+# -------------------------
+# 예시 사전
+# -------------------------
 DICTIONARY = {
     "손전화": {
         "south": "휴대전화",
         "meaning": "가지고 다니며 통화하는 전화기",
-        "difference": "남한에서는 휴대전화, 휴대폰이라는 표현을 주로 사용합니다."
+        "difference": "남한에서는 휴대전화, 휴대폰이라고 표현합니다."
     },
     "얼음보숭이": {
         "south": "아이스크림",
         "meaning": "차갑게 얼려 만든 달콤한 디저트",
-        "difference": "남한에서는 외래어인 아이스크림이 일반적입니다."
+        "difference": "남한에서는 아이스크림이라는 표현이 일반적입니다."
     },
     "녀성": {
         "south": "여성",
         "meaning": "여자라는 성별을 가리키는 말",
-        "difference": "남한 표기에서는 두음 법칙에 따라 여성이라고 씁니다."
+        "difference": "남한에서는 두음 법칙에 따라 여성이라고 씁니다."
     },
     "로동": {
         "south": "노동",
@@ -50,14 +57,14 @@ DICTIONARY = {
         "difference": "문맥에 따라 곧, 이내, 바로 등으로 바꿉니다."
     },
     "꽝포": {
-        "south": "허풍, 거짓말",
+        "south": "거짓말, 허풍",
         "meaning": "사실과 다르거나 과장된 말을 하는 것",
-        "difference": "문맥에 따라 허풍을 떨다, 거짓말하다 등으로 표현합니다."
+        "difference": "문맥에 따라 거짓말하다, 허풍을 떨다 등으로 표현합니다."
     },
-    "가락지빵": {
-        "south": "도넛",
-        "meaning": "고리 모양으로 만든 빵이나 과자",
-        "difference": "남한에서는 도넛이라는 표현이 일반적입니다."
+    "후라이": {
+        "south": "거짓말, 허풍",
+        "meaning": "일부 구어적 문맥에서 사실이 아닌 말을 뜻하는 표현",
+        "difference": "사용되는 지역과 문맥에 따라 의미가 달라질 수 있습니다."
     },
     "살림집": {
         "south": "집, 주택",
@@ -66,19 +73,24 @@ DICTIONARY = {
     },
 }
 
+
 SYSTEM_PROMPT = """
-너는 북한의 문화어를 남한의 자연스러운 한국어로 바꾸는 언어 도우미다.
-사용자가 입력한 의미를 바꾸거나 내용을 지어내지 마라.
-단어 뜻과 남북한 표현 차이를 쉬운 한국어로 설명하라.
-문맥이 불확실하면 불확실하다고 밝혀라.
-반드시 JSON 객체로만 답하라. 형식:
+너는 북한어를 남한에서 자연스럽게 쓰는 한국어로 바꾸는 도우미다.
+
+입력 문장의 의미를 바꾸거나 내용을 지어내지 마라.
+단어의 뜻과 남북한 표현 차이를 쉬운 한국어로 설명하라.
+문맥이 불확실하면 확실하지 않다고 밝혀라.
+북한어에 대응하는 남한어가 없는 경우 억지로 바꾸지 마라.
+
+반드시 JSON 객체로 답하라.
+형식:
 {
   "converted": "자연스러운 한국어 변환 결과",
   "summary": "쉬운 뜻풀이",
   "differences": [
     {
-      "north": "북한어",
-      "south": "남한어",
+      "north": "북한어 표현",
+      "south": "남한어 표현",
       "meaning": "뜻과 표현 차이"
     }
   ],
@@ -86,15 +98,19 @@ SYSTEM_PROMPT = """
 }
 """
 
+
+# -------------------------
+# 변환 기능
+# -------------------------
 def offline_convert(text):
     converted = text
     differences = []
 
-    # 긴 단어부터 찾아서 치환
     for word in sorted(DICTIONARY, key=len, reverse=True):
         if word in text:
             item = DICTIONARY[word]
             converted = converted.replace(word, item["south"])
+
             differences.append({
                 "north": word,
                 "south": item["south"],
@@ -104,13 +120,13 @@ def offline_convert(text):
     if differences:
         summary = (
             "예시 사전에 등록된 단어를 바꿨습니다. "
-            "문맥에 따라 가장 자연스러운 표현은 달라질 수 있습니다."
+            "실제 의미는 문맥에 따라 달라질 수 있습니다."
         )
         confidence = "보통"
     else:
         summary = (
             "예시 사전에서 일치하는 단어를 찾지 못했습니다. "
-            "AI 기능을 사용하면 문맥에 맞는 분석을 시도할 수 있습니다."
+            "AI 기능을 이용하면 문맥을 분석할 수 있습니다."
         )
         confidence = "낮음"
 
@@ -131,12 +147,12 @@ def parse_json(text):
     end = text.rfind("}")
 
     if start == -1 or end == -1:
-        raise ValueError("AI 응답 형식이 올바르지 않습니다.")
+        raise ValueError("AI 응답을 읽을 수 없습니다.")
 
     data = json.loads(text[start:end + 1])
 
     if not isinstance(data, dict):
-        raise ValueError("AI 응답이 JSON 객체가 아닙니다.")
+        raise ValueError("AI 응답 형식이 올바르지 않습니다.")
 
     if not isinstance(data.get("converted"), str):
         raise ValueError("변환 결과가 없습니다.")
@@ -153,13 +169,13 @@ def parse_json(text):
 
 def ai_convert(text, api_key):
     if genai is None:
-        raise RuntimeError("google-genai 라이브러리가 설치되지 않았습니다.")
+        raise RuntimeError("AI 라이브러리를 불러올 수 없습니다.")
 
     client = genai.Client(api_key=api_key)
 
     response = client.models.generate_content(
         model="gemini-2.5-flash-lite",
-        contents=SYSTEM_PROMPT + "\n\n입력 문장:\n" + text,
+        contents=SYSTEM_PROMPT + "\n입력 문장:\n" + text,
         config=types.GenerateContentConfig(
             temperature=0.2,
             response_mime_type="application/json"
@@ -172,185 +188,300 @@ def ai_convert(text, api_key):
     return parse_json(response.text)
 
 
-def display_result(result):
-    st.markdown("### 🇰🇷 한국어 변환 결과")
-    st.text_area(
-        "변환된 문장",
-        value=result["converted"],
-        height=120,
-        key="converted_output"
+# -------------------------
+# 디자인
+# -------------------------
+st.markdown("""
+<style>
+    .stApp {
+        background-color: #ffffff;
+    }
+
+    .block-container {
+        max-width: 1250px;
+        padding-top: 1rem;
+        padding-bottom: 2rem;
+    }
+
+    .main-title {
+        font-size: 30px;
+        font-weight: 700;
+        text-align: center;
+        color: #111111;
+        margin-bottom: 18px;
+    }
+
+    .outer-frame {
+        border: 1px solid #333333;
+        padding: 12px;
+        background: white;
+    }
+
+    .member-box {
+        border-right: 1px solid #333333;
+        min-height: 540px;
+        padding: 8px;
+        color: #111111;
+        font-size: 16px;
+        line-height: 2;
+    }
+
+    .language-label {
+        background-color: #cfe2f3;
+        border: 1px solid #333333;
+        color: #111111;
+        text-align: center;
+        padding: 5px 8px;
+        font-size: 20px;
+        margin: 0 auto 18px auto;
+        max-width: 250px;
+    }
+
+    .arrow {
+        text-align: center;
+        font-size: 38px;
+        line-height: 1.1;
+        color: #111111;
+        margin-bottom: 10px;
+    }
+
+    .example-box {
+        background-color: #cfe2f3;
+        border: 1px solid #333333;
+        color: #111111;
+        padding: 12px;
+        font-size: 18px;
+        line-height: 1.5;
+        margin: 18px 12px 5px 12px;
+    }
+
+    div[data-testid="stTextArea"] textarea {
+        background-color: #cfe2f3 !important;
+        color: #111111 !important;
+        border: 1px solid #333333 !important;
+        border-radius: 0 !important;
+        font-size: 18px !important;
+        min-height: 190px;
+    }
+
+    div[data-testid="stTextArea"] label {
+        display: none;
+    }
+
+    div.stButton > button {
+        border-radius: 0;
+        border: 1px solid #333333;
+        min-height: 42px;
+    }
+
+    div.stButton > button[kind="primary"] {
+        background-color: #cfe2f3;
+        color: #111111;
+        font-weight: 600;
+    }
+
+    .result-heading {
+        background-color: #cfe2f3;
+        border: 1px solid #333333;
+        padding: 8px;
+        text-align: center;
+        font-size: 18px;
+        color: #111111;
+        margin-bottom: 10px;
+    }
+
+    div[data-testid="stAlert"] {
+        border-radius: 0;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
+# -------------------------
+# 페이지 제목
+# -------------------------
+st.markdown(
+    '<div class="main-title">북한어변환</div>',
+    unsafe_allow_html=True
+)
+
+
+# -------------------------
+# 전체 표 레이아웃
+# -------------------------
+member_col, content_col = st.columns(
+    [1, 6],
+    gap="small"
+)
+
+with member_col:
+    st.markdown("""
+    <div class="member-box">
+        조원 3:<br>
+        11306 김슬지
+    </div>
+    """, unsafe_allow_html=True)
+
+
+with content_col:
+
+    # 북한어 / 화살표 / 남한어
+    label1, arrow_col, label2 = st.columns(
+        [1, 0.45, 1],
+        gap="small"
     )
 
-    st.markdown("### 💡 쉬운 뜻풀이")
-    st.write(result.get("summary", "뜻풀이가 없습니다."))
-
-    st.caption(
-        "분석 신뢰도: "
-        + str(result.get("confidence", "보통"))
-    )
-
-    st.markdown("### 🔍 북한어와 남한어의 차이")
-
-    differences = result.get("differences", [])
-
-    if not differences:
-        st.info(
-            "별도의 표현 차이를 찾지 못했습니다. "
-            "문맥에 따라 결과를 확인해 주세요."
+    with label1:
+        st.markdown(
+            '<div class="language-label">북한어</div>',
+            unsafe_allow_html=True
         )
 
-    for item in differences:
-        if not isinstance(item, dict):
-            continue
+    with arrow_col:
+        st.markdown(
+            '<div class="arrow">➜</div>',
+            unsafe_allow_html=True
+        )
 
-        with st.container(border=True):
-            left, right = st.columns(2)
+    with label2:
+        st.markdown(
+            '<div class="language-label">남한어</div>',
+            unsafe_allow_html=True
+        )
 
-            with left:
-                st.markdown("**북한어**")
-                st.write(item.get("north", "-"))
-
-            with right:
-                st.markdown("**남한어**")
-                st.write(item.get("south", "-"))
-
-            st.caption(item.get("meaning", ""))
-
-
-# 화면 디자인
-st.markdown(
-    """
-    <style>
-    .stApp {
-        background-color: #f5f8fc;
-    }
-    .main-title {
-        font-size: 34px;
-        font-weight: 800;
-        color: #203c60;
-        text-align: center;
-        padding: 12px 0 4px 0;
-    }
-    .sub-title {
-        text-align: center;
-        color: #63758a;
-        margin-bottom: 28px;
-    }
-    div.stButton > button[kind="primary"] {
-        background-color: #376da8;
-        border-radius: 10px;
-        height: 48px;
-        font-weight: bold;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    '<div class="main-title">🗣️ 북한어 변환소</div>',
-    unsafe_allow_html=True
-)
-st.markdown(
-    '<div class="sub-title">'
-    '북한말을 자연스러운 한국어로 바꾸고 표현의 차이를 알아보세요.'
-    '</div>',
-    unsafe_allow_html=True
-)
-
-with st.sidebar:
-    st.header("📖 이용 안내")
-    st.write("1. 북한어 단어나 문장을 입력하세요.")
-    st.write("2. 변환 버튼을 누르세요.")
-    st.write("3. 변환 결과와 뜻풀이를 확인하세요.")
-
-    st.divider()
-    st.markdown("**변환 예시**")
-    for word in DICTIONARY:
-        st.write("• " + word)
-
-    st.caption(
-        "AI 기능을 사용하려면 Streamlit Secrets에 "
-        "GEMINI_API_KEY를 등록하세요."
+    # 입력 칸 / 결과 칸
+    input_col, output_col = st.columns(
+        2,
+        gap="large"
     )
 
-left, right = st.columns(2, gap="large")
+    with input_col:
+        north_text = st.text_area(
+            "북한어 입력",
+            placeholder="북한어 단어나 문장을 입력하세요.",
+            height=190,
+            key="north_text",
+            max_chars=5000
+        )
 
-with left:
-    st.markdown("### 📝 북한어 입력")
+    with output_col:
+        if "converted_text" not in st.session_state:
+            st.session_state.converted_text = ""
 
-    user_text = st.text_area(
-        "변환할 북한어",
-        placeholder="예: 인차 손전화로 알려주겠소.",
-        height=200,
-        max_chars=5000
+        st.text_area(
+            "남한어 변환 결과",
+            value=st.session_state.converted_text,
+            height=190,
+            key="south_text",
+            disabled=True
+        )
+
+    # 예시 영역
+    st.markdown("""
+    <div class="example-box">
+        예) 꽝포, 대포, 후라이 → 거짓말
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.write("")
+
+    # AI 설정
+    use_ai = st.checkbox(
+        "AI를 사용하여 문맥까지 분석하기",
+        value=True
     )
 
-    use_ai = st.toggle(
-        "AI 문맥 분석 사용",
-        value=True,
-        help="API 키가 없으면 예시 사전으로 변환합니다."
-    )
-
-    submitted = st.button(
-        "한국어로 변환하기 →",
+    convert_button = st.button(
+        "북한어 변환하기",
         type="primary",
         use_container_width=True
     )
 
-with right:
-    st.markdown("### ✨ 변환 결과")
-
-    if not submitted:
-        st.info("왼쪽에 북한어를 입력하고 변환 버튼을 눌러주세요.")
-
-        st.markdown("**이런 기능을 이용할 수 있어요.**")
-        st.write("✔ 자연스러운 한국어로 변환")
-        st.write("✔ 단어의 의미를 쉽게 설명")
-        st.write("✔ 남북한 표현의 차이 비교")
-
-    elif not user_text.strip():
-        st.warning("변환할 단어나 문장을 입력해 주세요.")
-
-    else:
-        try:
-            api_key = str(
-                st.secrets.get("GEMINI_API_KEY", "")
-            ).strip()
-        except Exception:
-            api_key = ""
-
-        if use_ai and api_key:
-            try:
-                with st.spinner("AI가 문맥을 분석하고 있습니다..."):
-                    result = ai_convert(user_text.strip(), api_key)
-
-                st.success("AI 문맥 분석 완료")
-                display_result(result)
-
-            except Exception as error:
-                st.warning(
-                    "AI 요청에 실패했습니다. "
-                    "예시 사전 기반 결과를 표시합니다."
-                )
-                st.caption(
-                    "오류 유형: " + type(error).__name__
-                    + ". API 키, 네트워크 및 모델 설정을 확인하세요."
-                )
-                display_result(offline_convert(user_text.strip()))
+    if convert_button:
+        if not north_text.strip():
+            st.warning("북한어를 먼저 입력해 주세요.")
 
         else:
-            if use_ai and not api_key:
+            try:
+                api_key = str(
+                    st.secrets.get("GEMINI_API_KEY", "")
+                ).strip()
+            except Exception:
+                api_key = ""
+
+            result = None
+
+            if use_ai and api_key:
+                try:
+                    with st.spinner("북한어를 분석하고 있습니다..."):
+                        result = ai_convert(
+                            north_text.strip(),
+                            api_key
+                        )
+
+                    st.success("AI 변환이 완료되었습니다.")
+
+                except Exception as error:
+                    st.warning(
+                        "AI 요청에 실패하여 예시 사전으로 변환합니다."
+                    )
+                    st.caption(
+                        "오류 유형: " + type(error).__name__
+                    )
+
+            elif use_ai and not api_key:
                 st.info(
-                    "GEMINI_API_KEY가 등록되지 않아 "
-                    "예시 사전으로 변환합니다."
+                    "API 키가 없어 예시 사전으로 변환합니다. "
+                    "AI 기능을 사용하려면 Secrets를 설정하세요."
                 )
 
-            display_result(offline_convert(user_text.strip()))
+            if result is None:
+                result = offline_convert(north_text.strip())
+
+            st.session_state.converted_text = result["converted"]
+
+            # 결과 칸 즉시 갱신
+            st.rerun()
+
+
+    # 변환 결과 설명
+    if st.session_state.get("converted_text"):
+        st.divider()
+
+        st.markdown("### 단어 뜻과 표현 차이")
+
+        result_data = st.session_state.get(
+            "last_result",
+            None
+        )
+
+        # 변환 결과와 설명은 아래 저장 로직을 통해 표시됩니다.
+        if result_data:
+            st.info(result_data.get("summary", ""))
+
+            for item in result_data.get("differences", []):
+                with st.container(border=True):
+                    c1, c2 = st.columns(2)
+
+                    with c1:
+                        st.markdown("**북한어**")
+                        st.write(item.get("north", "-"))
+
+                    with c2:
+                        st.markdown("**남한어**")
+                        st.write(item.get("south", "-"))
+
+                    st.caption(item.get("meaning", ""))
+
+        else:
+            st.write(
+                "변환 결과를 확인하세요. "
+                "표현 차이는 문맥에 따라 달라질 수 있습니다."
+            )
+
 
 st.divider()
 
 st.caption(
-    "이 서비스는 언어 학습용 참고 도구입니다. "
-    "예시 사전은 제한적이며 자동 변환 결과에는 오류가 있을 수 있습니다."
+    "북한어변환 | 북한어와 남한어의 뜻과 표현 차이를 알아보는 학습 도구"
 )
