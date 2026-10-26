@@ -43,6 +43,7 @@ html, body, [class*="css"] {
     font-size: 1.4rem;
     font-weight: 700;
     color: #1E293B;
+    margin-top: 1rem;
     margin-bottom: 1.2rem;
     letter-spacing: -0.02em;
     text-align: center;
@@ -80,6 +81,34 @@ html, body, [class*="css"] {
     color: #64748B;
     line-height: 1.6;
 }
+
+.phone-card {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 1.4rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    margin-bottom: 1rem;
+}
+
+.phone-number {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #2563EB;
+    margin-top: 0.3rem;
+}
+
+.phone-label {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0F172A;
+}
+
+.phone-subtext {
+    font-size: 0.88rem;
+    color: #64748B;
+    margin-top: 0.2rem;
+}
 </style>
 """
 
@@ -98,10 +127,9 @@ banner_html = """
 """
 st.markdown(banner_html, unsafe_allow_html=True)
 
-# 3. 소제목
-st.markdown('<div class="section-title">주요 기능 설명 및 바로가기</div>', unsafe_allow_html=True)
+# 3. 주요 기능 설명 섹션
+st.markdown('<div class="section-title">주요 기능 설명</div>', unsafe_allow_html=True)
 
-# 4. 주요 기능 카드 (설명 전용)
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -133,3 +161,49 @@ with col3:
     </div>
     """
     st.markdown(card3_html, unsafe_allow_html=True)
+
+st.write("")
+st.write("")
+
+# 4. 공공기관 주요 상담 및 긴급 전화번호 안내 섹션
+st.markdown('<div class="section-title">📞 주요 공공기관 및 상담 콜센터 안내</div>', unsafe_allow_html=True)
+
+p_col1, p_col2 = st.columns(2)
+
+with p_col1:
+    phone1_html = """
+    <div class="phone-card">
+        <div class="phone-label">🏛️ 남북하나재단 종합상담 콜센터</div>
+        <div class="phone-subtext">초기 정착, 생활 안정, 일자리 및 정착금 통합 상담</div>
+        <div class="phone-number">☎ 1577-6635 / 1855-0714</div>
+    </div>
+    """
+    st.markdown(phone1_html, unsafe_allow_html=True)
+
+    phone2_html = """
+    <div class="phone-card">
+        <div class="phone-label">🏥 보건복지상담센터</div>
+        <div class="phone-subtext">긴급 생계 지원, 기초생활보장 및 의료·복지 상담</div>
+        <div class="phone-number">☎ 129</div>
+    </div>
+    """
+    st.markdown(phone2_html, unsafe_allow_html=True)
+
+with p_col2:
+    phone3_html = """
+    <div class="phone-card">
+        <div class="phone-label">⚖️ 대한법률구조공단</div>
+        <div class="phone-subtext">남한 생활 중 발생하는 임대차계약, 법률 분쟁 무료 상담</div>
+        <div class="phone-number">☎ 132</div>
+    </div>
+    """
+    st.markdown(phone3_html, unsafe_allow_html=True)
+
+    phone4_html = """
+    <div class="phone-card">
+        <div class="phone-label">👮 경찰청 민원상담 / 신변보호</div>
+        <div class="phone-subtext">신변보호관 연결 및 경찰 민원 문의 (긴급 신고: 112)</div>
+        <div class="phone-number">☎ 182</div>
+    </div>
+    """
+    st.markdown(phone4_html, unsafe_allow_html=True)
